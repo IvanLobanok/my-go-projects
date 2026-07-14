@@ -1,0 +1,9 @@
+**/*.env
+**/*.env
+
+pizza_shop/cmd/apiserver/apiserver
+!pizza_shop/cmd/apiserver/*.go
+*.exe
+*.test
+
+
