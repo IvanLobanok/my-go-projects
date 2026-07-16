@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"pizza_shop/internal/model"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresRepository struct {
@@ -45,10 +45,10 @@ func (r *PostgresRepository) GetPizzas(ctx context.Context) ([]model.Pizza, erro
 	return pizzas, nil
 }
 
-func (r *PostgresRepository) AddPizza(ctx context.Context, title string, price float64) error {
-	query := "INSERT INTO pizzas (title,price) VALUES ($1,$2)"
+func (r *PostgresRepository) AddPizza(ctx context.Context, p *model.Pizza) error {
+	query := "INSERT INTO pizzas (title,price) VALUES ($1,$2) RETURNING id"
 
-	_, err := r.db.Exec(ctx, query, title, price)
+	err := r.db.QueryRow(ctx, query, p.Title, p.Price).Scan(&p.ID)
 
 	if err != nil {
 		return fmt.Errorf("Ошибка добавления строки:%v", err)
@@ -198,7 +198,7 @@ func (r *PostgresRepository) NewUser(ctx context.Context, name string) (int, err
 	query := "INSERT INTO users (name) VALUES ($1) RETURNING id	"
 	err := r.db.QueryRow(ctx, query, name).Scan(&newUserID)
 	if err != nil {
-		return 0, fmt.Errorf("Ошибка вставки нового пользователя")
+		return 0, fmt.Errorf("Вставки нового пользователя: %w", err)
 	}
 	return newUserID, nil
 }
