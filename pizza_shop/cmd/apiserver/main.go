@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"pizza_shop/internal/handler"
 	"pizza_shop/internal/repository"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -22,6 +21,11 @@ func main() {
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
 		log.Fatal("Критическая ошибка: переменная DATABASE_URL не задана в .env")
+	}
+
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = ":8080"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -41,12 +45,12 @@ func main() {
 	repo := repository.NewPostgresRepository(pool)
 	h := handler.NewHandler(repo)
 
-	mux := http.NewServeMux()
-	h.RegisterRoutes(mux)
+	r := gin.Default()
+	h.RegisterRoutes(r)
 
-	fmt.Println("Сервер запущен на http://localhost:8080")
+	log.Printf("Сервер запущен на http://localhost%s\n", port)
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := r.Run(port); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }

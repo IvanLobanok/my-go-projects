@@ -1,60 +1,61 @@
 package handler
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"pizza_shop/internal/model"
-	"pizza_shop/internal/repository"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
-	repo *repository.PostgresRepository
-}
-
-func NewHandler(repo *repository.PostgresRepository) *Handler {
-	return &Handler{repo: repo}
-}
-
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/v1/pizzas", h.HandleGetPizzas)
-	mux.HandleFunc("POST /api/v1/pizzas", h.HandleCreatePizza)
-}
-
-func (h *Handler) HandleGetPizzas(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	pizzas, err := h.repo.GetPizzas(r.Context())
+func (h *Handler) HandleGetPizzas(c *gin.Context) {
+	pizzas, err := h.repo.GetPizzas(c.Request.Context())
 	if err != nil {
 		log.Printf("Ошибка получения пицц из бд: %v", err)
-		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(pizzas)
-	if err != nil {
-		http.Error(w, "Ошибка кодирования JSON", http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, pizzas)
 }
 
-func (h *Handler) HandleCreatePizza(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleCreatePizza(c *gin.Context) {
 	var input model.Pizza
 
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		http.Error(w, "Некорректный JSON-body", http.StatusInternalServerError)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный JSON-body"})
 		return
+
 	}
-	defer r.Body.Close()
-	err = h.repo.AddPizza(r.Context(), &input)
-	if err != nil {
+
+	if err := h.repo.AddPizza(c.Request.Context(), &input); err != nil {
 		log.Printf("Ошибка сохранения пиццы в бд: %v", err)
-		http.Error(w, "Не удалось сохранить пиццу", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить пиццу"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(input)
+	c.JSON(http.StatusCreated, input)
+}
+
+func (h *Handler) HandleDeletePizza(c *gin.Context) {
+	idStr := c.Param("id")
+
+	pizzaID, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат ID пиццы"})
+		return
+	}
+
+	err = h.repo.DeletePizza(c.Request.Context(), pizzaID)
+	if err != nil {
+		log.Printf("Не удалось удалить пиццу: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки данных пользователя"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Пицца удалена из базы данных",
+	})
+
 }

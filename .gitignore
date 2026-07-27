@@ -7,3 +7,13 @@ pizza_shop/cmd/apiserver/apiserver
 *.test
 
 
+*.exe
+*.exe.
+*.exe
+*.out
+*.app
+bin/
+/main
+.DS_Store
+.idea/
+.vscode/
