@@ -1,4 +1,4 @@
-# 🍕 Pizza Shop REST API
+🍕 Pizza Shop REST API
 
 Бэкенд-сервис для оформления заказов пиццы, написанный на Go с использованием фреймворка Gin и СУБД PostgreSQL.
 
@@ -15,3 +15,8 @@
 * **Аутентификация:** JWT (JSON Web Tokens)
 * **Хеширование паролей:** `golang.org/x/crypto/bcrypt`
 * **Конфигурация:** `godotenv`
+
+Создайте файл .env в корневой директории проекта и укажите ваши параметры подключения:
+DATABASE_URL=postgres://postgres:password@localhost:5432/pizza_db?sslmode=disable
+SERVER_PORT=:8080
+JWT_SECRET=super_secret_jwt_key_change_me
